@@ -1,5 +1,10 @@
-﻿pipeline {
+﻿
+pipeline {
     agent any
+
+    environment {
+        DOCKER_IMAGE = 'YOUR_DOCKERHUB_USERNAME/jenkins-app'
+    }
 
     stages {
         stage('Checkout') {
@@ -33,9 +38,26 @@
             }
         }
 
-        stage('Deploy') {
+        stage('Push to Docker Hub') {
             steps {
-                bat 'docker rm -f jenkins-app-container'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    bat '''
+                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                        docker tag jenkins-app:latest %DOCKER_USER%/jenkins-app:latest
+                        docker push %DOCKER_USER%/jenkins-app:latest
+                        docker logout
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Container') {
+            steps {
+                bat 'docker rm -f jenkins-app-container || exit /b 0'
                 bat 'docker run -d --name jenkins-app-container -p 3001:3000 jenkins-app:latest'
             }
         }
@@ -43,11 +65,11 @@
 
     post {
         success {
-            echo 'SUCCESS: Pipeline completed successfully!'
+            echo 'SUCCESS: Pipeline completed!'
+            echo 'Application: http://localhost:3001'
         }
-
         failure {
-            echo 'ERROR: Pipeline failed. Check Console Output.'
+            echo 'Pipeline failed. Check Console Output.'
         }
     }
 }
