@@ -1,0 +1,13 @@
+
+{
+  "name": "jenkins-app",
+  "version": "1.0.0",
+  "description": "Node.js application for Jenkins CI/CD practical",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "node test.js",
+    "build": "echo Build completed successfully"
+  }
+}
+
